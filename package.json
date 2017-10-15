@@ -1,0 +1,24 @@
+{
+  "name": "12-storefront-app",
+  "version": "1.0.0",
+  "description": "Week 12 homework",
+  "main": "bamazonCustomer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rose389/12-Storefront-App.git"
+  },
+  "author": "Marguerite Seifert",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Rose389/12-Storefront-App/issues"
+  },
+  "homepage": "https://github.com/Rose389/12-Storefront-App#readme",
+  "dependencies": {
+    "console.table": "^0.9.1",
+    "inquirer": "^3.3.0",
+    "mysql": "^2.15.0"
+  }
+}
