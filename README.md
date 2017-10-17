@@ -12,4 +12,11 @@ The requested quantity is checked against the database.
 	If there is sufficient quantity, the order is processed, and the customer is informed of their total cost.
 
 
+REQUIREMENTS:
 
+- npm install for (console.table), (mysql), (inquirer), 
+
+- .gitignore files:
+	connection.js to store your connection details and mysql passcode
+
+-

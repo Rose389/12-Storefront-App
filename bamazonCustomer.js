@@ -26,6 +26,8 @@ function afterConnection(){
 	var sql = 'SELECT item_id, product_name, stock_quantity FROM products';
 
 	connection.query(sql, function(err, result){
+		stock = result[prod].stock_quantity
+		console.log(stock);
 			console.table(result);
 			userInput();
 
