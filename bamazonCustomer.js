@@ -5,10 +5,11 @@ var inquirer = require("inquirer");
 var connection = require("./connection")
 
 // data variables
-var stock = 0;
-var price = 0;
 var prod = 0;
 var qty = 0;
+var itemsArray = [];
+var total = 0;
+var cart = 0;
 
 // the basic code
 connection.connect(function(err){
@@ -20,21 +21,43 @@ connection.connect(function(err){
 
 // THE FUNCTIONS
 
-// display all products for sale
+////////////// display all products for sale ////////////////
 	// ids - names - prices
 function afterConnection(){
-	var sql = 'SELECT item_id, product_name, stock_quantity FROM products';
-
-	connection.query(sql, function(err, result){
-		stock = result[prod].stock_quantity
-		console.log(stock);
-			console.table(result);
-			userInput();
-
-	});
+		createArray();
+	
 }; // THIS PART WORKS
 
-// prompt user for purchase info
+
+	///// create array of items for table/////
+	function createArray(){
+		// query database - get products
+		connection.query('SELECT * FROM products', function(err, result){	
+			if (err) throw err;
+
+			// for loop of result
+			for (var i = 0; i < result.length; i++) {
+				// create variable for each product with properties matching column header
+				var item = {
+					ID: result[i].item_id,
+					Name: result[i].product_name,
+					Department: result[i].department_name,
+					Price: "$" + result[i].price,
+					Qty: result[i].stock_quantity,
+				};
+
+				// push each item to the array
+				itemsArray.push(item);
+			}
+
+			// console.table the array
+			console.table(itemsArray);
+			userInput();
+		}); // end query
+
+	} // end function
+
+////////////// prompt user for purchase info ////////////////
 function userInput(){
 	inquirer
 		.prompt ([
@@ -50,45 +73,78 @@ function userInput(){
 				message: "How many of this product would you like to purchase?",
 				type: "input",
 			}
-		])
+		]) // end .prompt
 		.then(function(order) {
-			checkAvail(order, stock);
-		});
-}
+			checkAvail(order, itemsArray);
+		}); // end .then
+} // end function
 
 
-// check if available quantity can fulfill order
-function checkAvail(order, stock){
-	prod = order.item_ID;
-	qty = order.quantity;
-	console.log("id: " + prod + ", qty: " + qty + ", inv: " + stock);
+////////////// check if available quantity can fulfill order ////////////////
+function checkAvail(order, itemsArray){
+	prod = parseInt(order.item_ID);
+	qty = parseInt(order.quantity);
 
-		// if no, let customer know
-		if (stock < qty){
-		console.log("We are unable to fulfill your order at this time.");
+	for (var a = 0; a < itemsArray.length; a++) {
+		if (itemsArray[a].ID === prod && itemsArray[a].Qty < qty){
+			// if no, let customer know
+			console.log("We are unable to fulfill your order at this time. \nInsufficient Quantity");
+			// and prevent order from completing
+			connection.end();
+			} 
+		else if (itemsArray[a].ID === prod && itemsArray[a].Qty > qty){
+			updateProduct(order);		
+		} // end if else
+	}; // end for loop
+} // end function
 
-		// and prevent order from completing
-		connection.end();
+		// else if yes, update the SQL database
+		function updateProduct(order){
+			console.log("\nUpdating product " + prod);
 
-		} else {
-		updateProduct(stock, order);		
+			// update query variable to update product quantity,  to pass in orderQty?
+			var sql = 'UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_ID = ?';
+			var query = connection.query(sql, [qty, prod], function(err, result){
+				if (err) throw err;
+				totalCost(order);
+			});
 		}
-}
 
-
-// else if yes, update the SQL database
-function updateProduct(stock, order){
-	console.log("Updating product " + order.item_ID);
-
-	// update query variable to update product quantity,  to pass in orderQty?
-	sql = 'UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_ID = ?';
-	var query = connection.query(sql, [order.item_ID, order.quantity], function(err, result){
+/////////////// Display updated qty and cost ////////////////
+function totalCost(order){
+	// query database - get products
+	connection.query('SELECT * FROM products WHERE item_id = ?', prod, function(err, result){	
+		if (err) throw err;
+		cart = cart + qty;
+		total = total + (qty * result[0].price);
 		// show records updated
-		console.log("New quantity: " + (stock - order.quantity));
+		console.log("New (" + result[0].product_name + ") quantity: " + (result[0].stock_quantity));
 		// and show customer the total cost of their purchase 
-		console.log("Your order total is: " + (order.quantity * price));
+		console.log("\n\nYou have purchased " + cart + " items.\nYour updated order total is: $" + total + "\n");
+		// purchase more?
+		askAgain();
+	}); // end query
+} // end function
 
-		// end connection
-		connection.end();
-	});
-}
+
+////////////// prompt user for another purchase ////////////////
+function askAgain(){
+	inquirer
+		.prompt ([
+			// Ask for product ID
+			{
+				type: "list",
+				name: "Again",
+				message: "Would you like to purchase another item?",
+				choices: ["Yes", "No"],
+			},
+		]) // end .prompt
+		.then(function(ans) {
+			if (ans.Again === "Yes") {
+				userInput();
+			} else {
+				// end connection
+				connection.end();
+			}
+		}); // end .then
+} // end function
