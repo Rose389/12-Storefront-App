@@ -26,7 +26,7 @@ connection.connect(function(err){
 function afterConnection(){
 		createArray();
 	
-}; // THIS PART WORKS
+}; 
 
 
 	///// create array of items for table/////
